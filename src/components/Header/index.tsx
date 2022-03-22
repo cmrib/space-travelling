@@ -6,7 +6,7 @@ export default function Header() {
     <header>
       <Link href="/">
         <a >
-          <img src="./logo.png" alt="logo" />
+          <img src="/logo.png" alt="logo" />
         </a>
       </Link>
     </header>

@@ -4,6 +4,8 @@
     max-width: 1200px;
     margin: 60px auto;
     padding: 0 30px;
+
+   
 }
 
 
@@ -12,4 +14,17 @@
     background: none;
     color: #FF57B2;
     font-weight: bold;
+}
+
+.post{
+    display: block;
+    margin-top: 20px;
+
+    p{
+        margin: 5px 0
+    }
+
+    span{
+        margin: 10px 15px 10px 0px;
+    }
 }
