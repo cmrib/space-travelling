@@ -6,6 +6,7 @@ import Header from '../../components/Header';
 import commonStyles from '../../styles/common.module.scss';
 import styles from './post.module.scss';
 import { RichText } from "prismic-dom";
+import { FiCalendar, FiUser, FiClock } from 'react-icons/fi'
 
 interface Post {
   first_publication_date: string | null;
@@ -30,23 +31,31 @@ interface PostProps {
 
 export default function Post({ post }: PostProps) {
 
+  function readingCalc() {
+    const bodyText = RichText.asText(post.data.content[0].body)
+    const allText = post.data.content[0].heading + ' ' + bodyText
+    return Math.ceil(allText.match(/\S+/g).length / 200)
+  }
+
   const postHtml = RichText.asHtml(post.data.content[0].body)
+  const readingTime = readingCalc();
 
   return (
-    <>
+    <div className={commonStyles.container}>
       <Header />
-      <div>
+      <div className={styles.info}>
         <img src={post.data.banner.url} alt="banner" />
         <h1>{post.data.title}</h1>
-        <time>{post.first_publication_date}</time>
-        <span>{post.data.author}</span>
+        <span><FiCalendar /> {post.first_publication_date}</span>
+        <span><FiUser /> {post.data.author}</span>
+        <span><FiClock /> {readingTime} min</span>
       </div>
 
       <article>
-        <h1>{post.data.content[0].heading}</h1>
+        <h3>{post.data.content[0].heading}</h3>
         <div dangerouslySetInnerHTML={{ __html: postHtml }} />
       </article>
-    </>
+    </div>
   )
 }
 
@@ -56,10 +65,11 @@ export const getStaticPaths = async () => {
   // TODO
 
   return {
-    paths: [],
-    fallback: 'blocking'
+    paths: [
+      { params: { slug: 'a-complete-guide-to-useeffect' } },
+    ],
+    fallback: true
   }
-
 };
 
 export const getStaticProps: GetStaticProps = async context => {
@@ -83,6 +93,7 @@ export const getStaticProps: GetStaticProps = async context => {
   }
 
   return {
-    props: { post, response }
+    props: { post },
+    revalidate: 60 * 30 // 0 minutes
   }
 };

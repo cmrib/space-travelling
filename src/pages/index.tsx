@@ -6,7 +6,7 @@ import ptBR from 'date-fns/locale/pt-BR';
 import Prismic from '@prismicio/client'
 import commonStyles from '../styles/common.module.scss';
 import styles from './home.module.scss';
-import Link from 'next/link'
+import Link from 'next/link';
 
 interface Post {
   uid?: string;
@@ -31,28 +31,30 @@ export default function Home({ postsPagination }: HomeProps) {
 
   return (
     <>
-      <div className={styles.container}>
+      <div className={commonStyles.container}>
 
-        <img src="./logo.png" alt="logo" />
+        <img src="./logo.png" alt="logo" className={styles.logo} />
 
-        <div>
+        <div className={styles.postsContainer}>
           {postsPagination.results.map(post =>
-            <Link href={`/post/${post.uid}`} key={post.uid}>
 
+            <Link href={`/post/${post.uid}`} key={post.uid}>
               <a className={styles.post} >
                 <h3> {post.data.title} </h3>
                 <p> {post.data.subtitle}</p>
-                <span><FiCalendar /> {post.first_publication_date} </span>
+                <span><FiCalendar /> {post.first_publication_date}</span>
                 <span><FiUser />  {post.data.author}</span>
               </a>
             </Link>
           )}
+
         </div>
+
+        {postsPagination.next_page !== null ? (<button className={styles.loadButton}>Carregar mais posts</button>) : null}
 
       </div>
     </>
   )
-
 }
 
 export const getStaticProps: GetStaticProps = async () => {
@@ -70,11 +72,9 @@ export const getStaticProps: GetStaticProps = async () => {
   // TODO  
 
   const postsData = postsResponse.results.map(post => {
-
     const formattedDate = format(new Date(post.first_publication_date), 'dd MMM yyyy', {
       locale: ptBR
     })
-
     return {
       ...post,
       first_publication_date: formattedDate
