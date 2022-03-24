@@ -44,16 +44,16 @@ export default function Post({ post }: PostProps) {
     )
   }
 
-  function readingCalc() {
-    const bodyText = RichText.asText(post.data.content[0].body);
-    const allText = post.data.content[0].heading + ' ' + bodyText;
-    const wordsArray = allText.match(/\S+/g);
-    const readingTime = Math.ceil(wordsArray.length / 200);
-    return readingTime
-  }
+  const totalWords = post.data.content.reduce((total, contentItem) => {
 
-  const postHtml = RichText.asHtml(post.data.content[0].body);
-  const readingTime = readingCalc();
+    total += contentItem.heading.split(' ').length;
+    const words = contentItem.body.map(item => item.text.split(' ').length);
+    words.map(word => (total += word));
+    return total;
+  }, 0);
+  const readingTime = Math.ceil(totalWords / 200);
+
+
 
   return (
     <div className={commonStyles.container}>
@@ -61,37 +61,48 @@ export default function Post({ post }: PostProps) {
       <div className={styles.info}>
         <img src={post.data.banner.url} alt="banner" />
         <h1>{post.data.title}</h1>
-        <span><FiCalendar /> {post.first_publication_date}</span>
+        <span><FiCalendar /> {format(new Date(post.first_publication_date), 'dd MMM yyyy', {
+          locale: ptBR
+        })}</span>
         <span><FiUser /> {post.data.author}</span>
         <span><FiClock /> {readingTime} min</span>
       </div>
 
-      <article>
-        <h3>{post.data.content[0].heading}</h3>
-        <div dangerouslySetInnerHTML={{ __html: postHtml }} />
-      </article>
+      {post.data.content.map(content => {
+        return (
+          <article key={content.heading}>
+            <h2>{content.heading}</h2>
+            <div
+              className={styles.postContent}
+              dangerouslySetInnerHTML={{
+                __html: RichText.asHtml(content.body),
+              }}
+            />
+          </article>
+        );
+      })}
     </div>
   )
 }
 
 export const getStaticPaths: GetStaticPaths = async () => {
   const prismic = getPrismicClient();
-  const posts = await prismic.query(
-    [Prismic.predicates.at('document.type', 'posts')],
-    {
-      pageSize: 100,
-    }
-  );
-  // TODO
+  const posts = await prismic.query([
+    Prismic.Predicates.at('document.type', 'posts'),
+  ]);
 
-  const firstPostSlug = posts.results[0].uid;
+  const paths = posts.results.map(post => {
+    return {
+      params: {
+        slug: post.uid,
+      },
+    };
+  });
 
   return {
-    paths: [
-      { params: { slug: firstPostSlug } },
-    ],
-    fallback: true
-  }
+    paths,
+    fallback: true,
+  };
 };
 
 export const getStaticProps: GetStaticProps = async context => {
@@ -101,18 +112,24 @@ export const getStaticProps: GetStaticProps = async context => {
   const response = await prismic.getByUID('posts', String(slug), {});
   // TODO
   const post = {
-    first_publication_date: format(new Date(response.first_publication_date), 'dd MMM yyyy', {
-      locale: ptBR
-    }),
+    uid: response.uid,
+    first_publication_date: response.first_publication_date,
+    last_publication_date: response.last_publication_date,
     data: {
       title: response.data.title,
-      banner: {
-        url: response.data.banner.url
-      },
+      subtitle: response.data.subtitle,
       author: response.data.author,
-      content: response.data.content
-    }
-  }
+      banner: {
+        url: response.data.banner.url,
+      },
+      content: response.data.content.map(post => {
+        return {
+          heading: post.heading,
+          body: [...post.body],
+        };
+      }),
+    },
+  };
 
   return {
     props: { post },
