@@ -6,7 +6,9 @@ import Header from '../../components/Header';
 import commonStyles from '../../styles/common.module.scss';
 import styles from './post.module.scss';
 import { RichText } from "prismic-dom";
-import { FiCalendar, FiUser, FiClock } from 'react-icons/fi'
+import { FiCalendar, FiUser, FiClock } from 'react-icons/fi';
+import { useRouter } from 'next/router'
+import Prismic from '@prismicio/client'
 
 interface Post {
   first_publication_date: string | null;
@@ -31,13 +33,26 @@ interface PostProps {
 
 export default function Post({ post }: PostProps) {
 
-  function readingCalc() {
-    const bodyText = RichText.asText(post.data.content[0].body)
-    const allText = post.data.content[0].heading + ' ' + bodyText
-    return Math.ceil(allText.match(/\S+/g).length / 200)
+  const router = useRouter();
+
+  if (router.isFallback) {
+    return (
+      <div className={commonStyles.container}>
+        <Header />
+        <h1>Carregando...</h1>
+      </div>
+    )
   }
 
-  const postHtml = RichText.asHtml(post.data.content[0].body)
+  function readingCalc() {
+    const bodyText = RichText.asText(post.data.content[0].body);
+    const allText = post.data.content[0].heading + ' ' + bodyText;
+    const wordsArray = allText.match(/\S+/g);
+    const readingTime = Math.ceil(wordsArray.length / 200);
+    return readingTime
+  }
+
+  const postHtml = RichText.asHtml(post.data.content[0].body);
   const readingTime = readingCalc();
 
   return (
@@ -59,14 +74,21 @@ export default function Post({ post }: PostProps) {
   )
 }
 
-export const getStaticPaths = async () => {
-  // const prismic = getPrismicClient();
-  // const posts = await prismic.query(TODO);
+export const getStaticPaths: GetStaticPaths = async () => {
+  const prismic = getPrismicClient();
+  const posts = await prismic.query(
+    [Prismic.predicates.at('document.type', 'posts')],
+    {
+      pageSize: 100,
+    }
+  );
   // TODO
+
+  const firstPostSlug = posts.results[0].uid;
 
   return {
     paths: [
-      { params: { slug: 'a-complete-guide-to-useeffect' } },
+      { params: { slug: firstPostSlug } },
     ],
     fallback: true
   }
@@ -94,6 +116,6 @@ export const getStaticProps: GetStaticProps = async context => {
 
   return {
     props: { post },
-    revalidate: 60 * 30 // 0 minutes
+    revalidate: 60 * 30 // 30 minutes
   }
 };

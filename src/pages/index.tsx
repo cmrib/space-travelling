@@ -47,7 +47,6 @@ export default function Home({ postsPagination }: HomeProps) {
               </a>
             </Link>
           )}
-
         </div>
 
         {postsPagination.next_page !== null ? (<button className={styles.loadButton}>Carregar mais posts</button>) : null}
