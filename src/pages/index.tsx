@@ -7,6 +7,7 @@ import Prismic from '@prismicio/client'
 import commonStyles from '../styles/common.module.scss';
 import styles from './home.module.scss';
 import Link from 'next/link';
+import { useState } from 'react';
 
 interface Post {
   uid?: string;
@@ -29,27 +30,41 @@ interface HomeProps {
 
 export default function Home({ postsPagination }: HomeProps) {
 
+  const [posts, setPosts] = useState(postsPagination)
+
+  async function getNextPage() {
+    const nextPageResponse = await fetch(posts.next_page)
+    const nextPageData = await nextPageResponse.json()
+
+    const newPosts = {
+      next_page: nextPageData.next_page,
+      results: posts.results.concat(nextPageData.results)
+    }
+    setPosts(newPosts)
+  }
+
   return (
     <>
       <div className={commonStyles.container}>
-
         <img src="./logo.png" alt="logo" className={styles.logo} />
 
         <div className={styles.postsContainer}>
-          {postsPagination.results.map(post =>
+          {posts.results.map(post =>
 
             <Link href={`/post/${post.uid}`} key={post.uid}>
               <a className={styles.post} >
                 <h3> {post.data.title} </h3>
                 <p> {post.data.subtitle}</p>
-                <span><FiCalendar /> {post.first_publication_date}</span>
+                <span><FiCalendar /> {format(new Date(post.first_publication_date), 'dd MMM yyyy', {
+                  locale: ptBR
+                })}</span>
                 <span><FiUser />  {post.data.author}</span>
               </a>
             </Link>
           )}
         </div>
 
-        {postsPagination.next_page !== null ? (<button className={styles.loadButton}>Carregar mais posts</button>) : null}
+        {posts.next_page !== null ? (<button className={styles.loadButton} onClick={getNextPage}>Carregar mais posts</button>) : null}
 
       </div>
     </>
@@ -64,16 +79,14 @@ export const getStaticProps: GetStaticProps = async () => {
     [Prismic.predicates.at('document.type', 'posts')],
     {
       fetch: ['posts.title', 'posts.subtitle', 'posts.author'],
-      pageSize: 100,
+      pageSize: 1,
     }
   );
 
   // TODO  
 
   const postsData = postsResponse.results.map(post => {
-    const formattedDate = format(new Date(post.first_publication_date), 'dd MMM yyyy', {
-      locale: ptBR
-    })
+    const formattedDate = (post.first_publication_date)
     return {
       ...post,
       first_publication_date: formattedDate
